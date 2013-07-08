@@ -437,7 +437,13 @@ int lz4_compress(const unsigned char *src, size_t src_len,
 exit:
 	return ret;
 }
+<<<<<<< HEAD
 EXPORT_SYMBOL(lz4_compress);
 
 MODULE_LICENSE("Dual BSD/GPL");
+=======
+EXPORT_SYMBOL_GPL(lz4_compress);
+
+MODULE_LICENSE("GPL");
+>>>>>>> 0a76316... lib: add lz4 compressor module
 MODULE_DESCRIPTION("LZ4 compressor");
