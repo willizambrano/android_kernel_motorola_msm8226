@@ -258,7 +258,7 @@ case "$arg" in
                 && compr="lzop -9 -f"
 		echo "$output_file" | grep -q "\.lz4$" \
                 && [ -x "`which lz4 2> /dev/null`" ] \
-                && compr="lz4 -9 -f"
+                && compr="lz4 -l -9 -f"
 
 		echo "$output_file" | grep -q "\.cpio$" && compr="cat"
 		shift
