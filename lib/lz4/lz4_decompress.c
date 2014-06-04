@@ -87,6 +87,7 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
 			if (cpy != oend)
 				goto _output_error;
 
+
 			memcpy(op, ip, length);
 			ip += length;
 			break; /* EOF */
@@ -108,8 +109,8 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
 		if (length == ML_MASK) {
 			for (; *ip == 255; length += 255)
 				ip++;
-			if (unlikely(length > (size_t)(length + *ip)))
-				goto _output_error;
+		if (unlikely(length > (size_t)(length + *ip)))
+			goto _output_error;
 			length += *ip++;
 		}
 
