@@ -2685,6 +2685,13 @@ config PM8XXX_RPC_VIBRATOR
 	  is connected on the PM8XXX PMIC. Say Y if you want to enable
 	  this feature.
 
+config ALESSA_PLUG
+	bool "Enable plugging down/up of cores using powersuspend"
+	help
+	  This driver uses powersuspend to take down the cpu cores
+	  on a dual core device.
+	  Later this maybe be a reemplace of hotplug.
+
 config MSM_SPM_V1
 	bool "Driver support for SPM Version 1"
 	help
