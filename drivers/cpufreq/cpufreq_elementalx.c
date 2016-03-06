@@ -29,7 +29,7 @@
 #include <linux/slab.h>
 
 #define CREATE_TRACE_POINTS
-#include <trace/events/cpufreq_interactive.h>
+#include <trace/events/cpufreq_elementalx.h>
 
 //gboost
 #include <mach/kgsl.h>
@@ -180,40 +180,6 @@ bool is_elementalx_locked(void)
 		return false;
 }
 EXPORT_SYMBOL(is_elementalx_locked);
-
-static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
-{
-	u64 idle_time;
-	u64 cur_wall_time;
-	u64 busy_time;
-
-	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
-
-	busy_time  = kcpustat_cpu(cpu).cpustat[CPUTIME_USER];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SYSTEM];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_IRQ];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SOFTIRQ];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_STEAL];
-	busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_NICE];
-
-	idle_time = cur_wall_time - busy_time;
-	if (wall)
-		*wall = jiffies_to_usecs(cur_wall_time);
-
-	return jiffies_to_usecs(idle_time);
-}
-
-static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall)
-{
-	u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
-
-	if (idle_time == -1ULL)
-		return get_cpu_idle_time_jiffy(cpu, wall);
-	else
-		idle_time += get_cpu_iowait_time_us(cpu, wall);
-
-	return idle_time;
-}
 
 static inline cputime64_t get_cpu_iowait_time(unsigned int cpu, cputime64_t *wall)
 {
@@ -684,7 +650,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
 		struct cpu_dbs_info_s *dbs_info;
 		dbs_info = &per_cpu(od_cpu_dbs_info, j);
 		dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
-						&dbs_info->prev_cpu_wall);
+						&dbs_info->prev_cpu_wall, dbs_tuners_ins.io_is_busy);
 		if (dbs_tuners_ins.ignore_nice)
 			dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[CPUTIME_NICE];
 
@@ -1001,16 +967,16 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned load, unsigned 
 	if (dbs_tuners_ins.powersave_bias)
 		freq = powersave_bias_target(p, freq, CPUFREQ_RELATION_H);
 	else if (p->cur == p->max) {
-		trace_cpufreq_interactive_already (p->cpu, load, p->cur, p->cur, p->cur);
+		trace_cpufreq_elementalx_already (p->cpu, load, p->cur, p->cur, p->cur);
 		return;
 	}
 
-	trace_cpufreq_interactive_target (p->cpu, load, p->cur, p->cur, freq);
+	trace_cpufreq_elementalx_target (p->cpu, load, p->cur, p->cur, freq);
 
 	__cpufreq_driver_target(p, freq, (dbs_tuners_ins.powersave_bias || freq < p->max) ?
 			CPUFREQ_RELATION_L : CPUFREQ_RELATION_H);
 
-	trace_cpufreq_interactive_up (p->cpu, freq, p->cur);
+	trace_cpufreq_elementalx_up (p->cpu, freq, p->cur);
 }
 
 int set_two_phase_freq(int cpufreq)
@@ -1057,7 +1023,7 @@ static unsigned int get_cpu_current_load(unsigned int j, unsigned int *record)
 	if (record)
 		*record = j_dbs_info->prev_load;
 
-	cur_idle_time = get_cpu_idle_time(j, &cur_wall_time);
+	cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, dbs_tuners_ins.io_is_busy);
 	cur_iowait_time = get_cpu_iowait_time(j, &cur_wall_time);
 
 	wall_time = (unsigned int)
@@ -1285,14 +1251,14 @@ if (dbs_tuners_ins.gboost) {
 
 	if (input_event_boosted())
 	{
-		trace_cpufreq_interactive_already (policy->cpu, cur_load, policy->cur, policy->cur, policy->cur);
+		trace_cpufreq_elementalx_already (policy->cpu, cur_load, policy->cur, policy->cur, policy->cur);
 		return;
 	}
 
 	
 	
 	if (policy->cur == policy->min){
-		trace_cpufreq_interactive_already (policy->cpu, cur_load, policy->cur, policy->cur, policy->cur);
+		trace_cpufreq_elementalx_already (policy->cpu, cur_load, policy->cur, policy->cur, policy->cur);
 		return;
 	}
 
@@ -1328,10 +1294,10 @@ if (dbs_tuners_ins.gboost) {
 		if (dbs_tuners_ins.powersave_bias)
 			freq_next = powersave_bias_target(policy, freq_next, CPUFREQ_RELATION_L);
 
-		trace_cpufreq_interactive_target (policy->cpu, cur_load, policy->cur, policy->cur, freq_next);
+		trace_cpufreq_elementalx_target (policy->cpu, cur_load, policy->cur, policy->cur, freq_next);
 		__cpufreq_driver_target(policy, freq_next,
 			CPUFREQ_RELATION_L);
-		trace_cpufreq_interactive_down (policy->cpu, freq_next, policy->cur);
+		trace_cpufreq_elementalx_down (policy->cpu, freq_next, policy->cur);
 	}
 }
 
@@ -1577,7 +1543,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			j_dbs_info->cur_policy = policy;
 
 			j_dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
-						&j_dbs_info->prev_cpu_wall);
+						&j_dbs_info->prev_cpu_wall, dbs_tuners_ins.io_is_busy);
 			if (dbs_tuners_ins.ignore_nice)
 				j_dbs_info->prev_cpu_nice =
 						kcpustat_cpu(j).cpustat[CPUTIME_NICE];
@@ -1634,7 +1600,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					NULL,
 					dbs_tuners_ins.powersave_bias))
 			dbs_timer_init(this_dbs_info);
-		trace_cpufreq_interactive_target (cpu, 0, 0, 0, 0);
+		trace_cpufreq_elementalx_target (cpu, 0, 0, 0, 0);
 		break;
 
 	case CPUFREQ_GOV_STOP:
@@ -1651,7 +1617,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			sysfs_remove_group(cpufreq_global_kobject,
 					   &dbs_attr_group);
 		}
-		trace_cpufreq_interactive_target (cpu, 0, 0, 0, 0);
+		trace_cpufreq_elementalx_target (cpu, 0, 0, 0, 0);
 		break;
 
 	case CPUFREQ_GOV_LIMITS:
@@ -1707,7 +1673,7 @@ static int cpufreq_gov_dbs_up_task(void *data)
 		
 		dbs_tuners_ins.powersave_bias = 0;
 		dbs_freq_increase(policy, this_dbs_info->prev_load, this_dbs_info->input_event_freq);
-		this_dbs_info->prev_cpu_idle = get_cpu_idle_time(cpu, &this_dbs_info->prev_cpu_wall);
+		this_dbs_info->prev_cpu_idle = get_cpu_idle_time(cpu, &this_dbs_info->prev_cpu_wall, dbs_tuners_ins.io_is_busy);
 
 		mutex_unlock(&this_dbs_info->timer_mutex);
 
