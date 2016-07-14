@@ -784,6 +784,11 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_POWERSUSPEND
+	set_power_suspend_state_hook(POWER_SUSPEND_INACTIVE);
+	screen_on = true;
+#endif
+
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 	mipi  = &pdata->panel_info.mipi;
@@ -901,6 +906,11 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	pr_info("%s+: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	mipi  = &pdata->panel_info.mipi;
+
+#ifdef CONFIG_POWERSUSPEND
+	set_power_suspend_state_hook(POWER_SUSPEND_ACTIVE);
+	screen_on = false;
+#endif
 
 	if (!mfd->quickdraw_in_progress)
 		mmi_panel_notify(MMI_PANEL_EVENT_PRE_DISPLAY_OFF, NULL);
