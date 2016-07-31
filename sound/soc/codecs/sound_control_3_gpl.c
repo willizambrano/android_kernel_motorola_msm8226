@@ -194,12 +194,19 @@ static ssize_t mic_gain_store(struct kobject *kobj,
 static ssize_t speaker_gain_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
+#ifndef CONFIG_MMI_TITAN_DTB
         return sprintf(buf, "%u %u\n",
 			tapan_read(fauxsound_codec_ptr,
 				TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL),
 			tapan_read(fauxsound_codec_ptr,
 				TAPAN_A_CDC_RX4_VOL_CTL_B2_CTL));
-
+#else
+        return sprintf(buf, "%u %u\n",
+			tapan_read(fauxsound_codec_ptr,
+				TAPAN_A_CDC_RX2_VOL_CTL_B2_CTL),
+			tapan_read(fauxsound_codec_ptr,
+				TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL));
+#endif
 }
 
 static ssize_t speaker_gain_store(struct kobject *kobj,
@@ -208,13 +215,21 @@ static ssize_t speaker_gain_store(struct kobject *kobj,
 	unsigned int lval, rval, chksum;
 
 	sscanf(buf, "%u %u %u", &lval, &rval, &chksum);
-
+#ifndef CONFIG_MMI_TITAN_DTB
 	if (calc_checksum(lval, rval, chksum)) {
 		tapan_write(fauxsound_codec_ptr,
 			TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL, lval);
 		tapan_write(fauxsound_codec_ptr,
 			TAPAN_A_CDC_RX4_VOL_CTL_B2_CTL, rval);
 	}
+#else
+	if (calc_checksum(lval, rval, chksum)) {
+		tapan_write(fauxsound_codec_ptr,
+			TAPAN_A_CDC_RX2_VOL_CTL_B2_CTL, lval);
+		tapan_write(fauxsound_codec_ptr,
+			TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL, rval);
+	}
+#endif
 	return count;
 }
 
