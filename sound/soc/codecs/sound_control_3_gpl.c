@@ -215,21 +215,20 @@ static ssize_t speaker_gain_store(struct kobject *kobj,
 	unsigned int lval, rval, chksum;
 
 	sscanf(buf, "%u %u %u", &lval, &rval, &chksum);
-#ifndef CONFIG_MMI_TITAN_DTB
+
 	if (calc_checksum(lval, rval, chksum)) {
+#ifndef CONFIG_MMI_TITAN_DTB
 		tapan_write(fauxsound_codec_ptr,
 			TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL, lval);
 		tapan_write(fauxsound_codec_ptr,
 			TAPAN_A_CDC_RX4_VOL_CTL_B2_CTL, rval);
-	}
 #else
-	if (calc_checksum(lval, rval, chksum)) {
 		tapan_write(fauxsound_codec_ptr,
 			TAPAN_A_CDC_RX2_VOL_CTL_B2_CTL, lval);
 		tapan_write(fauxsound_codec_ptr,
 			TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL, rval);
-	}
 #endif
+	}
 	return count;
 }
 
