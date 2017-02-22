@@ -32,7 +32,7 @@
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/input.h>
-#include <linux/powersuspend.h>
+#include <linux/state_notifier.h>
 #include <linux/hrtimer.h>
 
 /* uncomment since no touchscreen defines android touch, do that here */
@@ -79,10 +79,10 @@ static int touch_x = 0, touch_y = 0;
 static bool touch_x_called = false, touch_y_called = false;
 static bool exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
-//static struct notifier_block s2w_lcd_notif;
 static bool r_barrier[2] = {false, false};
 static struct input_dev * sweep2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
+static struct notifier_block notif;
 static struct workqueue_struct *s2w_input_wq;
 static struct work_struct s2w_input_work;
 
@@ -497,18 +497,29 @@ static struct input_handler s2w_input_handler = {
 	.id_table	= s2w_ids,
 };
 
-static void s2w_suspend(struct power_suspend *h) {
+static void s2w_suspend(void) {
 	s2w_scr_suspended = true;
 }
 
-static void s2w_resume(struct power_suspend *h) {
+static void s2w_resume(void) {
 	s2w_scr_suspended = false;
 }
 
-static struct power_suspend s2w_power_suspend_handler = {
-	.suspend = s2w_suspend,
-	.resume = s2w_resume,
-};
+static int state_notifier_callback(struct notifier_block *this,
+				unsigned long event, void *data)
+{
+	switch (event) {
+		case STATE_NOTIFIER_ACTIVE:
+			s2w_resume();
+			break;
+		case STATE_NOTIFIER_SUSPEND:
+			s2w_suspend();
+			break;
+		default:
+			break;
+	}
+	return NOTIFY_OK;
+}
 
 /*
  * SYSFS stuff below here
@@ -526,35 +537,9 @@ static ssize_t s2w_sweep2wake_show(struct device *dev,
 static ssize_t s2w_sweep2wake_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	int s2w_switch_old = s2w_switch;
-	int rc = 0;
-
 	if (buf[0] >= '0' && buf[0] <= '2' && buf[1] == '\n')
                 if (s2w_switch != buf[0] - '0')
 		        s2w_switch = buf[0] - '0';
-
-	if (s2w_switch > 1)
-		s2w_switch = 1;
-	if (s2w_switch < 0)
-		s2w_switch = 0;
-
-	if (s2w_switch_old == s2w_switch)
-		return count;
-
-	if (s2w_switch) {
-		s2w_input_wq = create_workqueue("s2wiwq");
-		if (!s2w_input_wq) {
-			pr_err("%s: Failed to create s2wiwq workqueue\n", __func__);
-			return -EFAULT;
-		}
-		INIT_WORK(&s2w_input_work, s2w_input_callback);
-		rc = input_register_handler(&s2w_input_handler);
-		if (rc)
-			pr_err("%s: Failed to register s2w_input_handler\n", __func__);
-	} else {
-		input_unregister_handler(&s2w_input_handler);
-		destroy_workqueue(s2w_input_wq);
-	}
 
 	return count;
 }
@@ -625,19 +610,19 @@ static int __init sweep2wake_init(void)
 		goto err_input_dev;
 	}
 
-	if (s2w_switch) {
-		s2w_input_wq = create_workqueue("s2wiwq");
-		if (!s2w_input_wq) {
-			pr_err("%s: Failed to create s2wiwq workqueue\n", __func__);
-			return -EFAULT;
-		}
-		INIT_WORK(&s2w_input_work, s2w_input_callback);
-		rc = input_register_handler(&s2w_input_handler);
-		if (rc)
-			pr_err("%s: Failed to register s2w_input_handler\n", __func__);
+	s2w_input_wq = create_workqueue("s2wiwq");
+	if (!s2w_input_wq) {
+		pr_err("%s: Failed to create s2wiwq workqueue\n", __func__);
+		return -EFAULT;
 	}
+	INIT_WORK(&s2w_input_work, s2w_input_callback);
+	rc = input_register_handler(&s2w_input_handler);
+	if (rc)
+		pr_err("%s: Failed to register s2w_input_handler\n", __func__);
 
-	register_power_suspend(&s2w_power_suspend_handler);
+	notif.notifier_call = state_notifier_callback;
+	if (state_register_client(&notif))
+		return -EINVAL;
 
 #ifndef ANDROID_TOUCH_DECLARED
 	android_touch_kobj = kobject_create_and_add("android_touch", NULL) ;
@@ -676,3 +661,4 @@ static void __exit sweep2wake_exit(void)
 
 module_init(sweep2wake_init);
 module_exit(sweep2wake_exit);
+

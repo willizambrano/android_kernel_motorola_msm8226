@@ -38,7 +38,6 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#include <linux/powersuspend.h>
 #include <linux/input/sweep2wake.h>
 #include <linux/input/doubletap2wake.h>
 #endif
@@ -193,12 +192,10 @@ static struct ct406_data *ct406_misc_data;
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 bool prox_covered = false;
-static bool ct_active;
 static bool forced;
+static bool screen_suspended;
 extern void touch_suspend(void);
 extern void touch_resume(void);
-extern bool s2w_call_activity;
-extern bool dt2w_call_activity;
 #endif
 
 static struct ct406_reg {
@@ -563,20 +560,18 @@ static void ct406_prox_mode_uncovered(struct ct406_data *ct)
 		pilt = 0;
 	if (piht > ct->pdata_max)
 		piht = ct->pdata_max;
-
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+if (s2w_switch == 1 || dt2w_switch > 0) {
+	prox_covered = false;
+	if (screen_suspended) {
+		touch_resume();
+		}
+	}	
+#endif
 	ct->prox_mode = CT406_PROX_MODE_UNCOVERED;
 	ct->prox_low_threshold = pilt;
 	ct->prox_high_threshold = piht;
 	ct406_write_prox_thresholds(ct);
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-	if (s2w_switch == 1 || dt2w_switch > 0) {
-		if (!s2w_call_activity || !dt2w_call_activity) {
-			prox_covered = false;
-			if (ct_active)
-				touch_resume();
-		}
-	}	
-#endif
 	pr_info("%s: Prox mode uncovered\n", __func__);
 }
 
@@ -588,17 +583,15 @@ static void ct406_prox_mode_covered(struct ct406_data *ct)
 
 	if (pilt > ct->pdata_max)
 		pilt = ct->pdata_max;
-
 	ct->prox_mode = CT406_PROX_MODE_COVERED;
 	ct->prox_low_threshold = pilt;
 	ct->prox_high_threshold = piht;
 	ct406_write_prox_thresholds(ct);
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 	if (s2w_switch == 1 || dt2w_switch > 0) {
-		if (!s2w_call_activity || !dt2w_call_activity) {
-			prox_covered = true;
-			if (ct_active)
-				touch_suspend();
+		prox_covered = true;
+		if (screen_suspended) {
+		touch_suspend();
 		}
 	}
 #endif
@@ -1481,39 +1474,28 @@ static void ct406_work_prox_start(struct work_struct *work)
 }
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-static void ct_suspend(struct power_suspend *h)
+void ct_enable(void)
 {
-	if (s2w_switch == 1 || dt2w_switch > 0) {
-		if (!s2w_call_activity || !dt2w_call_activity) {
-			if (forced) {
-				ct406_disable_prox(ct406_misc_data);
-				forced = false;
-			}
-			ct_active = false;
-
-			if (screen_on)
-				touch_resume();
+	screen_suspended = true;
+	if (!ct406_misc_data->prox_enabled)
+		{
+			forced = true;
+			ct406_enable_prox(ct406_misc_data);
 		}
-	}
 }
+EXPORT_SYMBOL(ct_enable);
 
-static void ct_resume(struct power_suspend *h)
+void ct_disable(void)
 {
-	if (s2w_switch == 1 || dt2w_switch > 0) {
-		if (!s2w_call_activity || !dt2w_call_activity) {
-			if (!ct406_misc_data->prox_enabled) {
-				forced = true;
-				ct406_enable_prox(ct406_misc_data);
-			}
-			ct_active = true;
+	screen_suspended = false;
+	if (forced)
+		{
+			ct406_disable_prox(ct406_misc_data);
+			forced = false;
 		}
-	}
 }
+EXPORT_SYMBOL(ct_disable);
 
-static struct power_suspend ct_suspend_handler = {
-	.suspend = ct_resume,
-	.resume = ct_suspend,
-};
 #else
 
 static int ct406_suspend(struct ct406_data *ct)
@@ -1765,8 +1747,6 @@ static int ct406_probe(struct i2c_client *client,
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 	if (s2w_switch == 1 || dt2w_switch > 0)
 		ct406_enable_prox(ct);
-
-	register_power_suspend(&ct_suspend_handler);
 #else
 	ct->pm_notifier.notifier_call = ct406_pm_event;
 	error = register_pm_notifier(&ct->pm_notifier);
@@ -1809,11 +1789,7 @@ static int ct406_remove(struct i2c_client *client)
 {
 	struct ct406_data *ct = i2c_get_clientdata(client);
 
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-	unregister_power_suspend(&ct_suspend_handler);
-#else
 	unregister_pm_notifier(&ct->pm_notifier);
-#endif
 
 	device_remove_file(&client->dev, &dev_attr_registers);
 
@@ -1878,3 +1854,4 @@ module_exit(ct406_exit);
 MODULE_DESCRIPTION("ALS and Proximity driver for CT406");
 MODULE_AUTHOR("Motorola Mobility");
 MODULE_LICENSE("GPL");
+

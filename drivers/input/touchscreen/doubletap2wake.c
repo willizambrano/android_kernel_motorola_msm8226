@@ -28,7 +28,7 @@
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/input.h>
-#include <linux/powersuspend.h>
+#include <linux/state_notifier.h>
 #include <linux/hrtimer.h>
 #include <asm-generic/cputime.h>
 
@@ -69,6 +69,7 @@ static bool touch_x_called = false, touch_y_called = false, touch_cnt = true;
 static bool exec_count = true;
 static struct input_dev * doubletap2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
+static struct notifier_block notif;
 static struct workqueue_struct *dt2w_input_wq;
 static struct work_struct dt2w_input_work;
 
@@ -287,20 +288,31 @@ static struct input_handler dt2w_input_handler = {
 	.id_table	= dt2w_ids,
 };
 
-static void dt2w_suspend(struct power_suspend *h)
+static void dt2w_suspend(void) 
 {
 	dt2w_scr_suspended = true;
 }
 
-static void dt2w_resume(struct power_suspend *h)
+static void dt2w_resume(void) 
 {
 	dt2w_scr_suspended = false;
 }
 
-static struct power_suspend __refdata dt2w_suspend_handler = {
-	.suspend = dt2w_suspend,
-	.resume = dt2w_resume,
-};
+static int state_notifier_callback(struct notifier_block *this,
+				unsigned long event, void *data)
+{
+	switch (event) {
+		case STATE_NOTIFIER_ACTIVE:
+			dt2w_resume();
+			break;
+		case STATE_NOTIFIER_SUSPEND:
+			dt2w_suspend();
+			break;
+		default:
+			break;
+	}
+	return NOTIFY_OK;
+}
 
 /*
  * SYSFS stuff below here
@@ -318,35 +330,9 @@ static ssize_t dt2w_doubletap2wake_show(struct device *dev,
 static ssize_t dt2w_doubletap2wake_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	int dt2w_switch_old = dt2w_switch;
-	int rc = 0;
-	
 	if (buf[0] >= '0' && buf[0] <= '2' && buf[1] == '\n')
 		if (dt2w_switch != buf[0] - '0')
 			dt2w_switch = buf[0] - '0';
-
-	if (dt2w_switch > 1)
-		dt2w_switch = 1;
-	if (dt2w_switch < 0)
-		dt2w_switch = 0;
-
-	if (dt2w_switch_old == dt2w_switch)
-		return count;
-
-	if (dt2w_switch) {
-		dt2w_input_wq = create_workqueue("dt2wiwq");
-		if (!dt2w_input_wq) {
-			pr_err("%s: Failed to create dt2wiwq workqueue\n", __func__);
-			return -EFAULT;
-		}
-		INIT_WORK(&dt2w_input_work, dt2w_input_callback);
-		rc = input_register_handler(&dt2w_input_handler);
-		if (rc)
-			pr_err("%s: Failed to register dt2w_input_handler\n", __func__);
-	} else {
-		input_unregister_handler(&dt2w_input_handler);
-		destroy_workqueue(dt2w_input_wq);
-	}
 
 	return count;
 }
@@ -402,19 +388,19 @@ static int __init doubletap2wake_init(void)
 		goto err_input_dev;
 	}
 
-	if (dt2w_switch) {
-		dt2w_input_wq = create_workqueue("dt2wiwq");
-		if (!dt2w_input_wq) {
-			pr_err("%s: Failed to create dt2wiwq workqueue\n", __func__);
-			return -EFAULT;
-		}
-		INIT_WORK(&dt2w_input_work, dt2w_input_callback);
-		rc = input_register_handler(&dt2w_input_handler);
-		if (rc)
-			pr_err("%s: Failed to register dt2w_input_handler\n", __func__);
+	dt2w_input_wq = create_workqueue("dt2wiwq");
+	if (!dt2w_input_wq) {
+		pr_err("%s: Failed to create dt2wiwq workqueue\n", __func__);
+		return -EFAULT;
 	}
+	INIT_WORK(&dt2w_input_work, dt2w_input_callback);
+	rc = input_register_handler(&dt2w_input_handler);
+	if (rc)
+		pr_err("%s: Failed to register dt2w_input_handler\n", __func__);
 
-	register_power_suspend(&dt2w_suspend_handler);
+	notif.notifier_call = state_notifier_callback;
+	if (state_register_client(&notif))
+		return -EINVAL;
 
 #ifndef ANDROID_TOUCH_DECLARED
 	android_touch_kobj = kobject_create_and_add("android_touch", NULL) ;
