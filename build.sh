@@ -17,7 +17,7 @@ export ARCH=arm
 export KBUILD_BUILD_USER="WilliamZambrano"
 export KBUILD_BUILD_HOST="AMDfx6300"
 
-make falcon_defconfig
+make titan_defconfig
 make menuconfig
 echo -e "$yellow*****************************************************"
 echo "       Compilando Evolution_Kernel         "
