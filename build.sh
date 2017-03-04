@@ -23,8 +23,8 @@ echo -e "$yellow*****************************************************"
 echo "       Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
 
-make -o3 -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
+make -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
-echo -e "$yellow Construcción completada en $(($DIFF / 60)) minuto(s) y $(($DIFF % 60)) segundos.$nocol"
+echo -e "$yellow Kernel compilado en $(($DIFF / 60)) minuto(s) y $(($DIFF % 60)) segundos.$nocol"
