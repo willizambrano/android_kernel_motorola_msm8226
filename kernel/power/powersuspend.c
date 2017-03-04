@@ -48,6 +48,8 @@ static DEFINE_SPINLOCK(state_lock);
 static int state; // Yank555.lu : Current powersave state (screen on / off)
 static int mode;  // Yank555.lu : Current powersave mode  (kernel / userspace / panel / hybrid)
 
+bool screen_on = true;
+
 void register_power_suspend(struct power_suspend *handler)
 {
 	struct list_head *pos;
