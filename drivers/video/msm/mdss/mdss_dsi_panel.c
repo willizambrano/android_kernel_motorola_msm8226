@@ -36,14 +36,9 @@
 #include "mdss_fb.h"
 #include "dsi_v2.h"
 
-#ifdef CONFIG_POWERSUSPEND
-#include <linux/powersuspend.h>
-#endif
-
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 #include <linux/input/sweep2wake.h>
 #endif
-
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 #include <linux/input/doubletap2wake.h>
 #endif
@@ -379,7 +374,7 @@ static int mdss_dsi_panel_partial_update(struct mdss_panel_data *pdata)
 				panel_data);
 	mipi  = &pdata->panel_info.mipi;
 
-	pr_debug("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
+	pr_debug("%s: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	caset[1] = (((pdata->panel_info.roi_x) & 0xFF00) >> 8);
 	caset[2] = (((pdata->panel_info.roi_x) & 0xFF));
@@ -787,8 +782,12 @@ extern bool s2w_scr_suspended;
 extern bool s2w_call_activity;
 #endif
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+bool screen_suspended  = false;
+bool forced = true;
 extern bool dt2w_call_activity;
 extern bool dt2w_scr_suspended;
+extern void ct_enable(void);
+extern void ct_disable(void);
 #endif
 
 static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
@@ -805,17 +804,12 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_POWERSUSPEND
-	set_power_suspend_state_hook(POWER_SUSPEND_INACTIVE);
-	screen_on = true;
-#endif
-
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 	mipi  = &pdata->panel_info.mipi;
 
 	mfd = pdata->mfd;
-	pr_info("%s+: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
+	pr_info("%s+: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	if (!mfd->quickdraw_in_progress)
 		mmi_panel_notify(MMI_PANEL_EVENT_PRE_DISPLAY_ON, NULL);
@@ -908,14 +902,18 @@ end:
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 	if (s2w_switch == 1) {
-		if (!s2w_call_activity)
+		if (!s2w_call_activity) {
 			s2w_scr_suspended = false;
+			ct_disable();
+			}
 	}
 #endif
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 	if (dt2w_switch > 0) {
-		if (!dt2w_call_activity)
+		if (!dt2w_call_activity) {
 			dt2w_scr_suspended = false;
+			ct_disable();
+			}
 	}
 #endif
 	return 0;
@@ -936,14 +934,9 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 				panel_data);
 
 	mfd = pdata->mfd;
-	pr_info("%s+: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
+	pr_info("%s+: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	mipi  = &pdata->panel_info.mipi;
-
-#ifdef CONFIG_POWERSUSPEND
-	set_power_suspend_state_hook(POWER_SUSPEND_ACTIVE);
-	screen_on = false;
-#endif
 
 	if (!mfd->quickdraw_in_progress)
 		mmi_panel_notify(MMI_PANEL_EVENT_PRE_DISPLAY_OFF, NULL);
@@ -982,14 +975,18 @@ disable_regs:
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 	if (s2w_switch == 1) {
-		if (!s2w_call_activity)
+		if (!s2w_call_activity) {
+			ct_enable();
 			s2w_scr_suspended = true;
+			}
 	}
 #endif
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 	if (dt2w_switch > 0) {
-		if (!dt2w_call_activity)
+		if (!dt2w_call_activity) {
+			ct_enable();
 			dt2w_scr_suspended = true;
+		}
 	}
 #endif
 	return 0;
@@ -2254,3 +2251,4 @@ int mdss_dsi_panel_init(struct device_node *node,
 
 	return 0;
 }
+

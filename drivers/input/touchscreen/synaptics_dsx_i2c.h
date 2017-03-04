@@ -319,8 +319,8 @@ struct f34_properties {
 #define SYNAPTICS_DSX_STATES { \
 	DSX(UNKNOWN), \
 	DSX(ACTIVE), \
-	DSX(PREVENT_SLEEP), \
 	DSX(STANDBY), \
+	DSX(PREVENT_SLEEP), \
 	DSX(SUSPEND), \
 	DSX(BL), \
 	DSX(INIT), \
@@ -445,3 +445,4 @@ int synaptics_rmi4_read_packet_regs(
 	struct synaptics_rmi4_data *rmi4_data,
 	struct synaptics_rmi4_func_packet_regs *regs);
 #endif
+
