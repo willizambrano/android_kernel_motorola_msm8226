@@ -85,4 +85,3 @@ int lz4_decompress(const unsigned char *src, size_t *src_len,
 int lz4_decompress_unknownoutputsize(const unsigned char *src, size_t src_len,
 		unsigned char *dest, size_t *dest_len);
 #endif
-

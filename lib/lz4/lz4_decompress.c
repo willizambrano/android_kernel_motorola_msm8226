@@ -332,4 +332,3 @@ EXPORT_SYMBOL(lz4_decompress_unknownoutputsize);
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("LZ4 Decompressor");
 #endif
-
