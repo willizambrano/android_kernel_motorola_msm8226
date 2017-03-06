@@ -1,7 +1,8 @@
 /*
  * MSM Hotplug Driver
  *
- * Copyright (c) 2013-2015, Pranav Vashi <neobuddy89@gmail.com>
+ * Copyright (c) 2013-2014, Fluxi <linflux@arcor.de>
+ * Copyright (c) 2010-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,8 +20,9 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/cpufreq.h>
-#include <linux/fb.h>
-#include <linux/notifier.h>
+#ifdef CONFIG_POWERSUSPEND
+#include <linux/powersuspend.h>
+#endif
 #include <linux/mutex.h>
 #include <linux/input.h>
 #include <linux/math64.h>
@@ -135,8 +137,6 @@ struct cpu_load_data {
 
 static DEFINE_PER_CPU(struct cpu_load_data, cpuload);
 
-static bool io_is_busy;
-
 static int update_average_load(unsigned int cpu)
 {
 	int ret;
@@ -150,7 +150,7 @@ static int update_average_load(unsigned int cpu)
 	if (ret)
 		return -EINVAL;
 
-	cur_idle_time = get_cpu_idle_time(cpu, &cur_wall_time, io_is_busy);
+	cur_idle_time = get_cpu_idle_time(cpu, &cur_wall_time, 0);
 
 	wall_time = (unsigned int) (cur_wall_time - pcpu->prev_cpu_wall);
 	pcpu->prev_cpu_wall = cur_wall_time;
@@ -474,9 +474,6 @@ static void msm_hotplug_suspend(struct work_struct *work)
 {
 	int cpu;
 
-	if (!hotplug.msm_enabled)
-		return;
-
 	mutex_lock(&hotplug.msm_hotplug_mutex);
 	hotplug.suspended = 1;
 	hotplug.min_cpus_online_res = hotplug.min_cpus_online;
@@ -504,9 +501,6 @@ static void msm_hotplug_suspend(struct work_struct *work)
 static void __ref msm_hotplug_resume(struct work_struct *work)
 {
 	int cpu, required_reschedule = 0, required_wakeup = 0;
-
-	if (!hotplug.msm_enabled)
-		return;
 
 	if (hotplug.suspended) {
 		mutex_lock(&hotplug.msm_hotplug_mutex);
@@ -537,45 +531,30 @@ static void __ref msm_hotplug_resume(struct work_struct *work)
 		reschedule_hotplug_work();
 }
 
-static void __msm_hotplug_suspend(void)
+static void __msm_hotplug_suspend(struct power_suspend *handler)
 {
+	if (!hotplug.msm_enabled || hotplug.suspended)
+		return;
+
 	INIT_DELAYED_WORK(&hotplug.suspend_work, msm_hotplug_suspend);
 	queue_delayed_work_on(0, susp_wq, &hotplug.suspend_work, 
 				 msecs_to_jiffies(hotplug.suspend_defer_time * 1000)); 
 }
 
-static void __msm_hotplug_resume(void)
+static void __msm_hotplug_resume(struct power_suspend *handler)
 {
+	if (!hotplug.msm_enabled)
+		return;
+
 	flush_workqueue(susp_wq);
 	cancel_delayed_work_sync(&hotplug.suspend_work);
 	queue_work_on(0, susp_wq, &hotplug.resume_work);
 }
 
-static int fb_notifier_callback(struct notifier_block *self,
-				unsigned long event, void *data)
-{
-	struct fb_event *evdata = data;
-	int *blank;
-
-	if (evdata && evdata->data && event == FB_EVENT_BLANK) {
-		blank = evdata->data;
-		switch (*blank) {
-			case FB_BLANK_UNBLANK:
-				//display on
-				__msm_hotplug_resume();
-				break;
-			case FB_BLANK_POWERDOWN:
-			case FB_BLANK_HSYNC_SUSPEND:
-			case FB_BLANK_VSYNC_SUSPEND:
-			case FB_BLANK_NORMAL:
-				//display off
-				__msm_hotplug_suspend();
-				break;
-		}
-	}
-
-	return 0;
-}
+static struct power_suspend msm_hotplug_power_suspend_driver = {
+	.suspend = __msm_hotplug_suspend,
+	.resume = __msm_hotplug_resume,
+};
 
 static void hotplug_input_event(struct input_handle *handle, unsigned int type,
 				unsigned int code, int value)
@@ -691,7 +670,7 @@ static int __ref msm_hotplug_start(void)
 		goto err_out;
 	}
 
-	hotplug.notif.notifier_call = fb_notifier_callback;
+	register_power_suspend(&msm_hotplug_power_suspend_driver);
 
 	ret = input_register_handler(&hotplug_input_handler);
 	if (ret) {
@@ -760,7 +739,7 @@ static void msm_hotplug_stop(void)
 	mutex_destroy(&stats.stats_mutex);
 	kfree(stats.load_hist);
 
-	hotplug.notif.notifier_call = NULL;
+	unregister_power_suspend(&msm_hotplug_power_suspend_driver);
 	input_unregister_handler(&hotplug_input_handler);
 
 	destroy_workqueue(susp_wq);
@@ -996,7 +975,7 @@ static ssize_t store_history_size(struct device *dev,
 	if (hotplug.msm_enabled) {
 		flush_workqueue(hotplug_wq);
 		cancel_delayed_work_sync(&hotplug_work);
-		memset(stats.load_hist, 0, (int)sizeof(stats.load_hist));
+		memset(stats.load_hist, 0, sizeof(stats.load_hist));
 	}
 
 	stats.hist_size = val;
@@ -1174,29 +1153,6 @@ static ssize_t store_fast_lane_load(struct device *dev,
 	return count;
 }
 
-static ssize_t show_io_is_busy(struct device *dev,
-				   struct device_attribute *msm_hotplug_attrs,
-				   char *buf)
-{
-	return sprintf(buf, "%u\n", io_is_busy);
-}
-
-static ssize_t store_io_is_busy(struct device *dev,
-				    struct device_attribute *msm_hotplug_attrs,
-				    const char *buf, size_t count)
-{
-	int ret;
-	unsigned int val;
-
-	ret = sscanf(buf, "%u", &val);
-	if (ret != 1 || val < 0 || val > 1)
-		return -EINVAL;
-
-	io_is_busy = val ? true : false;
-
-	return count;
-}
-
 static ssize_t show_current_load(struct device *dev,
 				 struct device_attribute *msm_hotplug_attrs,
 				 char *buf)
@@ -1224,7 +1180,6 @@ static DEVICE_ATTR(cpus_boosted, 644, show_cpus_boosted, store_cpus_boosted);
 static DEVICE_ATTR(offline_load, 644, show_offline_load, store_offline_load);
 static DEVICE_ATTR(fast_lane_load, 644, show_fast_lane_load,
 		   store_fast_lane_load);
-static DEVICE_ATTR(io_is_busy, 644, show_io_is_busy, store_io_is_busy);
 static DEVICE_ATTR(current_load, 444, show_current_load, NULL);
 
 static struct attribute *msm_hotplug_attrs[] = {
@@ -1241,7 +1196,6 @@ static struct attribute *msm_hotplug_attrs[] = {
 	&dev_attr_cpus_boosted.attr,
 	&dev_attr_offline_load.attr,
 	&dev_attr_fast_lane_load.attr,
-	&dev_attr_io_is_busy.attr,
 	&dev_attr_current_load.attr,
 	NULL,
 };
@@ -1252,7 +1206,7 @@ static struct attribute_group attr_group = {
 
 /************************** sysfs end ************************/
 
-static int msm_hotplug_probe(struct platform_device *pdev)
+static int __devinit msm_hotplug_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct kobject *module_kobj;
@@ -1333,7 +1287,7 @@ static void __exit msm_hotplug_exit(void)
 late_initcall(msm_hotplug_init);
 module_exit(msm_hotplug_exit);
 
-MODULE_AUTHOR("Pranav Vashi <neobuddy89@gmail.com>");
+MODULE_AUTHOR("Fluxi <linflux@arcor.de>");
 MODULE_DESCRIPTION("MSM Hotplug Driver");
 MODULE_LICENSE("GPLv2");
 
