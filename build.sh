@@ -23,7 +23,7 @@ echo -e "$yellow*****************************************************"
 echo "       Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
 
-make -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
+make -o3 -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
