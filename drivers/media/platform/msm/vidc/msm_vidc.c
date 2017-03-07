@@ -1411,5 +1411,6 @@ int msm_vidc_close(void *instance)
 	pr_info(VIDC_DBG_TAG "Closed video instance: %pK\n", VIDC_INFO, inst);
 	kfree(inst);
 
+
 	return 0;
 }

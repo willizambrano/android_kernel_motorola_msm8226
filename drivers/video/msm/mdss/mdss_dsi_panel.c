@@ -27,7 +27,6 @@
 #include <linux/jiffies.h>
 #include <linux/ktime.h>
 
-
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/lcd_notify.h>

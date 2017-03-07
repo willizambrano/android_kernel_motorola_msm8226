@@ -13,8 +13,6 @@
 #include <linux/stddef.h>
 #include <linux/module.h>
 
-extern const struct linux_logo logo_larry_clut224;
-
 #ifdef CONFIG_M68K
 #include <asm/setup.h>
 #endif
@@ -80,10 +78,6 @@ const struct linux_logo * __init_refok fb_find_logo(int depth)
 	}
 	
 	if (depth >= 8) {
-#ifdef CONFIG_LOGO_LARRY_CLUT224
-		/* Generic Linux logo */
-		logo = &logo_larry_clut224;
-#endif
 #ifdef CONFIG_LOGO_LINUX_CLUT224
 		/* Generic Linux logo */
 		logo = &logo_linux_clut224;
