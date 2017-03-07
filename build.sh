@@ -9,18 +9,22 @@ yellow='\033[0;33m'
 red='\033[0;31m'
 nocol='\033[0m'
 
-echo -e "Borrando basura"
+echo -e "$yellow*****************************************************"
+echo "                 Borrando basura         "
+echo -e "*****************************************************$nocol"
+
+rm -rf arch/arm/boot/*.dtb
 make clean && make mrproper
 
-export CROSS_COMPILE=/home/william/linaro4.9/bin/arm-eabi-
+export CROSS_COMPILE=/home/william/gcc4.8/bin/arm-eabi-
 export ARCH=arm
 export KBUILD_BUILD_USER="WilliamZambrano"
 export KBUILD_BUILD_HOST="AMDfx6300"
 
-make falcon_defconfig
+make titan_defconfig
 make menuconfig
-echo -e "$yellow*****************************************************"
-echo "       Compilando Evolution_Kernel         "
+echo -e "$blue*****************************************************"
+echo "           Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
 
 make -o3 -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
