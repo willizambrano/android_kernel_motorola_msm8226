@@ -14,6 +14,8 @@ echo "                 Borrando basura         "
 echo -e "*****************************************************$nocol"
 
 rm -rf arch/arm/boot/*.dtb
+rm -f /home/william/android_kernel_motorola_msm8226/arch/arm/boot/zImage-dtb
+rm -f /home/william/android_kernel_motorola_msm8226/arch/arm/boot/zImage
 make clean && make mrproper
 
 export CROSS_COMPILE=/home/william/linaro4.9/bin/arm-cortex_a7-linux-gnueabihf-
@@ -28,6 +30,8 @@ echo "           Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
 
 make -o3 -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
+
+mv /home/william/android_kernel_motorola_msm8226/arch/arm/boot/zImage-dtb /home/william/android_kernel_motorola_msm8226/Evolution_Kernel/boot
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
