@@ -358,7 +358,7 @@ static struct tcp_congestion_ops tcp_ascarex __read_mostly = {
 	.pkts_acked	= tcp_ascarex_pkts_acked,
 
 	.owner		= THIS_MODULE,
-	.name		= "AsCaReX"
+	.name		= "ascarex"
 };
 
 static int __init tcp_ascarex_register(void)
