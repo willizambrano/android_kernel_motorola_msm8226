@@ -16,7 +16,7 @@ echo -e "*****************************************************$nocol"
 rm -rf arch/arm/boot/*.dtb
 make clean && make mrproper
 
-export CROSS_COMPILE=/home/joker/linaro4.9/bin/arm-eabi-
+export CROSS_COMPILE=/home/joker/linaro4.9/bin/arm-cortex_a7-linux-gnueabihf-
 export ARCH=arm
 export SUBARCH=arm
 export KBUILD_BUILD_USER="WilliamZambrano"
