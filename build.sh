@@ -23,7 +23,6 @@ export KBUILD_BUILD_USER="WilliamZambrano"
 export KBUILD_BUILD_HOST="OreoRules"
 
 make falcon_defconfig
-make menuconfig
 echo -e "$blue*****************************************************"
 echo "           Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
