@@ -22,7 +22,7 @@ export SUBARCH=arm
 export KBUILD_BUILD_USER="WilliamZambrano"
 export KBUILD_BUILD_HOST="Fx6300"
 
-make titan_defconfig
+make falcon_defconfig
 make menuconfig
 echo -e "$blue*****************************************************"
 echo "           Compilando Evolution_Kernel         "
