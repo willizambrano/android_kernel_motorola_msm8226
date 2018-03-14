@@ -250,8 +250,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fno-tree-vectorize -fomit-frame-pointer -fgcse-las -std=gnu89
-HOSTCXXFLAGS = -O3 -fno-tree-vectorize -fgcse-las
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
+HOSTCXXFLAGS = -O2
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -352,17 +352,13 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-OPTIMIZATION_FLAGS = -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 \
-                     -ffast-math -fsingle-precision-constant \
-                     -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr \
-                     -fgraphite-identity -floop-parallelize-all -ftree-loop-linear \
-                     -floop-interchange -floop-strip-mine -floop-block
-CFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
-AFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
+CFLAGS_MODULE   =
+AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL   = $(OPTIMIZATION_FLAGS)
-AFLAGS_KERNEL   = $(OPTIMIZATION_FLAGS)
-CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
+CFLAGS_KERNEL	=
+AFLAGS_KERNEL	=
+CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
@@ -377,7 +373,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-sizeof-pointer-memaccess \
-		   -fno-delete-null-pointer-checks -Werror
+		   -fno-delete-null-pointer-checks \
+		   -std=gnu89
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
@@ -569,16 +567,12 @@ all: vmlinux
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+else
+KBUILD_CFLAGS	+= -O2
 endif
-ifdef CONFIG_CC_OPTIMIZE_DEFAULT
-KBUILD_CFLAGS += -O2
-endif
-ifdef CONFIG_CC_OPTIMIZE_MORE
-KBUILD_CFLAGS += -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-tree-vectorize -fno-inline-functions
-endif
-ifdef CONFIG_CC_OPTIMIZE_FAST
-KBUILD_CFLAGS += -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-tree-vectorize -fno-inline-functions
-endif
+
+# Needed to unbreak GCC 7.x and above
+KBUILD_CFLAGS   += $(call cc-option,-fno-store-merging,)
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
@@ -635,15 +629,15 @@ ifdef CONFIG_DEBUG_INFO_REDUCED
 KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
 endif
 
-#ifdef CONFIG_FUNCTION_TRACER
-#KBUILD_CFLAGS	+= -pg
-#ifdef CONFIG_DYNAMIC_FTRACE
-#	ifdef CONFIG_HAVE_C_RECORDMCOUNT
-#		BUILD_C_RECORDMCOUNT := y
-#		export BUILD_C_RECORDMCOUNT
-#	endif
-#endif
-#endif
+ifdef CONFIG_FUNCTION_TRACER
+KBUILD_CFLAGS	+= -pg
+ifdef CONFIG_DYNAMIC_FTRACE
+	ifdef CONFIG_HAVE_C_RECORDMCOUNT
+		BUILD_C_RECORDMCOUNT := y
+		export BUILD_C_RECORDMCOUNT
+	endif
+endif
+endif
 
 # We trigger additional mismatches with less inlining
 ifdef CONFIG_DEBUG_SECTION_MISMATCH
