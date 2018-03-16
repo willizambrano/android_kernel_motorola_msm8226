@@ -1242,4 +1242,3 @@ module_exit(msm_hotplug_exit);
 MODULE_AUTHOR("Pranav Vashi <neobuddy89@gmail.com>");
 MODULE_DESCRIPTION("MSM Hotplug Driver");
 MODULE_LICENSE("GPLv2");
-
