@@ -16,14 +16,11 @@ echo -e "*****************************************************$nocol"
 rm -rf arch/arm/boot/*.dtb
 make clean && make mrproper
 
-export CROSS_COMPILE=/home/william/gcc4.8/bin/arm-eabi-
+export CROSS_COMPILE=/home/william/q6.4/bin/arm-QUVNTNM_TOOLCHAIN-linux-musleabihf-
 export ARCH=arm
 export SUBARCH=arm
-export KBUILD_BUILD_USER="WilliamZambrano"
-export KBUILD_BUILD_HOST="Fx6300"
 
 make falcon_defconfig
-make menuconfig
 echo -e "$blue*****************************************************"
 echo "           Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"

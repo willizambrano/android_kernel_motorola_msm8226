@@ -47,7 +47,7 @@ config INITRAMFS_ROOT_GID
 
 config RD_GZIP
 	bool "Support initial ramdisks compressed using gzip" if EXPERT
-	default !EXPERT
+	default y
 	depends on BLK_DEV_INITRD
 	select DECOMPRESS_GZIP
 	help
@@ -92,7 +92,7 @@ config RD_LZO
 
 config RD_LZ4
 	bool "Support initial ramdisks compressed using LZ4" if EXPERT
-	default y
+	default !EXPERT
 	depends on BLK_DEV_INITRD
 	select DECOMPRESS_LZ4
 	help

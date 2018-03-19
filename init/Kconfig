@@ -114,9 +114,12 @@ config LOCALVERSION_AUTO
 	    $ git rev-parse --verify HEAD
 
 	  which is done within the script "scripts/setlocalversion".)
- 
- config HAVE_KERNEL_GZIP
-bool
+
+config HAVE_KERNEL_GZIP
+	bool
+
+config HAVE_KERNEL_BZIP2
+	bool
 
 config HAVE_KERNEL_LZMA
 	bool
@@ -132,8 +135,8 @@ config HAVE_KERNEL_LZ4
 
 choice
 	prompt "Kernel compression mode"
-	default KERNEL_LZ4
-	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+	default KERNEL_GZIP
+	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
 	help
 	  The linux kernel is a kind of self-extracting executable.
 	  Several compression algorithms are available, which differ
@@ -153,11 +156,21 @@ choice
 	  If in doubt, select 'gzip'
 
 config KERNEL_GZIP
- 	bool "Gzip"
- 	depends on HAVE_KERNEL_GZIP
- 	help
- 	  The old and tried gzip compression. It provides a good balance
- 	  between compression ratio and decompression speed.
+	bool "Gzip"
+	depends on HAVE_KERNEL_GZIP
+	help
+	  The old and tried gzip compression. It provides a good balance
+	  between compression ratio and decompression speed.
+
+config KERNEL_BZIP2
+	bool "Bzip2"
+	depends on HAVE_KERNEL_BZIP2
+	help
+	  Its compression ratio and speed is intermediate.
+	  Decompression speed is slowest among the three.  The kernel
+	  size is about 10% smaller with bzip2, in comparison to gzip.
+	  Bzip2 uses a large amount of memory. For modern kernels you
+	  will need at least 8MB RAM or more for booting.
 
 config KERNEL_LZMA
 	bool "LZMA"
@@ -942,35 +955,13 @@ source "usr/Kconfig"
 
 endif
 
-choice
-	prompt "Optimization level (-Os, -O2, -O3, -Ofast)"
-	default CC_OPTIMIZE_DEFAULT
-
 config CC_OPTIMIZE_FOR_SIZE
-	bool "Use -Os"
+	bool "Optimize for size"
 	help
-	  Enabling this option will pass "-Os" instead of "-O2" or "-O3" to gcc
-	  resulting in a smaller, less optimized kernel.
+	  Enabling this option will pass "-Os" instead of "-O2" to gcc
+	  resulting in a smaller kernel.
 
-config CC_OPTIMIZE_DEFAULT
-	bool "Use -O2"
-	help
-	  Enabling this option will pass "-O2" instead of "-Os" or "-O3" to gcc
-	  resulting in a normal sized kernel, slightly optimized.
-
-config CC_OPTIMIZE_MORE
-	bool "Use -O3"
-	help
-	  Enabling this option will pass "-O3" instead of "-Os" or "-O2" to gcc
-	  resulting in a large sized kernel, fully optimized.
-
-config CC_OPTIMIZE_FAST
-	bool "Use -Ofast"
-	help
-	  Enabling this option will pass "-O3" instead of "-Os" or "-O2" or "-O3" to gcc
-	  resulting in a large sized kernel, speed optimized.
-
-endchoice
+	  If unsure, say Y.
 
 config SYSCTL
 	bool

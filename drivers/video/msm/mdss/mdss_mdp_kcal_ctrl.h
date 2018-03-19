@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  * Copyright (c) 2013, LGE Inc. All rights reserved

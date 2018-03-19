@@ -691,7 +691,7 @@ static ssize_t reset_store(struct device *dev,
 
 	if (!bdev)
 		return -ENOMEM;
-
+	
 	/* Do not reset an active device! */
 	if (bdev->bd_holders) {
 		ret = -EBUSY;
@@ -713,7 +713,7 @@ static ssize_t reset_store(struct device *dev,
 
 	zram_reset_device(zram, true);
 	return len;
-
+	
 out:
 	bdput(bdev);
 	return ret;

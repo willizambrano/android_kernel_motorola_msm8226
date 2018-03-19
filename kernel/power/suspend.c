@@ -251,7 +251,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		if (error)
 			goto Platform_wake;
 	}
-
+	
 	/*
 	 * PM_SUSPEND_FREEZE equals
 	 * frozen processes + suspended devices + idle processors.
@@ -385,7 +385,7 @@ static int enter_state(suspend_state_t state)
 
 	if (!mutex_trylock(&pm_mutex))
 		return -EBUSY;
-
+	
 	if (state == PM_SUSPEND_FREEZE)
 		freeze_begin();
 
