@@ -16,16 +16,15 @@ echo -e "*****************************************************$nocol"
 rm -rf arch/arm/boot/*.dtb
 make clean && make mrproper
 
-export CROSS_COMPILE=/home/william/q6.4/bin/arm-QUVNTNM_TOOLCHAIN-linux-musleabihf-
+export CROSS_COMPILE=/home/joker/q6.4/bin/arm-QUVNTNM_TOOLCHAIN-linux-musleabihf-
 export ARCH=arm
-export SUBARCH=arm
 
 make falcon_defconfig
 echo -e "$blue*****************************************************"
 echo "           Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
 
-make -o3 -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
+make -o3 -j2 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
