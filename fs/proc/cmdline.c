@@ -4,10 +4,22 @@
 #include <linux/seq_file.h>
 #include <asm/setup.h>
 
+#ifdef CONFIG_MMI_UNIT_INFO
+#include "../../arch/arm/mach-msm/mmi-unit-info.h"
+extern int board_lpm_mode(void);
+#endif
+
 static char new_command_line[COMMAND_LINE_SIZE];
 
 static int cmdline_proc_show(struct seq_file *m, void *v)
 {
+#ifdef CONFIG_MMI_UNIT_INFO
+	if (board_lpm_mode()) {
+		seq_printf(m, "%s %s\n", new_command_line,
+				"androidboot.mode=charger");
+		return 0;
+	}
+#endif
 	seq_printf(m, "%s\n", new_command_line);
 	return 0;
 }
@@ -38,12 +50,18 @@ static void remove_flag(char *cmd, const char *flag)
 	}
 }
 
-static void remove_safetynet_flags(char *cmd)
+static void remove_flags(char *cmd)
 {
 	remove_flag(cmd, "androidboot.enable_dm_verity=");
 	remove_flag(cmd, "androidboot.secboot=");
 	remove_flag(cmd, "androidboot.verifiedbootstate=");
 	remove_flag(cmd, "androidboot.veritymode=");
+
+#ifdef CONFIG_MMI_UNIT_INFO
+	if (board_lpm_mode()) {
+	remove_flag(cmd, "androidboot.mode=");
+	}
+#endif
 }
 
 static int __init proc_cmdline_init(void)
@@ -54,7 +72,7 @@ static int __init proc_cmdline_init(void)
 	 * Remove various flags from command line seen by userspace in order to
 	 * pass SafetyNet CTS check.
 	 */
-	remove_safetynet_flags(new_command_line);
+	remove_flags(new_command_line);
 
 	proc_create("cmdline", 0, NULL, &cmdline_proc_fops);
 	return 0;
