@@ -274,7 +274,7 @@ static int __devexit gdsc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct of_device_id gdsc_match_table[] = {
+static struct of_device_id gdsc_match_table[] __initdata = {
 	{ .compatible = "qcom,gdsc" },
 	{}
 };

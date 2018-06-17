@@ -108,24 +108,6 @@ config CPU_FREQ_DEFAULT_GOV_INTERACTIVE
 	  you to get a full dynamic cpu frequency capable system by simply
 	  loading your cpufreq low-level hardware driver, using the
 	  'interactive' governor for latency-sensitive workloads.
-	  
-config CPU_FREQ_DEFAULT_GOV_XPERIENCE
-	bool "XPerience"
-	select CPU_FREQ_GOV_XPERIENCE
-	help
-	Use the CPUFreq governor 'xperience' as default.
-	
-config CPU_FREQ_DEFAULT_GOV_BIOSHOCK
-	bool "BioShock"
-	select CPU_FREQ_GOV_BIOSHOCK
-	help
-	  Default governor of BioShock kernel
-
-config CPU_FREQ_DEFAULT_GOV_SMARTMAX
-	bool "SmartMax"
-	select CPU_FREQ_GOV_SMARTMAX
-	help
-	  Use the CPUFreq governor 'smartmax' as default.
 
 endchoice
 
@@ -221,26 +203,6 @@ config CPU_FREQ_GOV_CONSERVATIVE
 	  module will be called cpufreq_conservative.
 
 	  For details, take a look at linux/Documentation/cpu-freq.
-
-	  If in doubt, say N.
-	  
-config CPU_FREQ_GOV_XPERIENCE
-	 tristate "'xperience' cpufreq governor"
-	 depends on CPU_FREQ
-	 help
-	'XPerience' - a "powered and smart" governor
-	
-config CPU_FREQ_GOV_BIOSHOCK
-	tristate "'bioshock' cpufreq bioshock"
-	depends on CPU_FREQ
-	help
-	  'bioshock' - More aggressive version of conservative
-	  
-config CPU_FREQ_GOV_SMARTMAX
-	tristate "'smartmax' cpufreq governor"
-	depends on CPU_FREQ
-	help
-	  smartmax' - a "smart" optimized governor!
 
 	  If in doubt, say N.
 

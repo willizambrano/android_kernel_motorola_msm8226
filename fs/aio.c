@@ -1704,7 +1704,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
 
 	kiocb_batch_init(&batch, nr);
 
-//	blk_start_plug(&plug);
+	//blk_start_plug(&plug);
 
 	/*
 	 * AKPM: should this return a partial result if some of the IOs were
@@ -1728,7 +1728,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
 		if (ret)
 			break;
 	}
-//	blk_finish_plug(&plug);
+	//blk_finish_plug(&plug);
 
 	kiocb_batch_free(ctx, &batch);
 	put_ioctx(ctx);

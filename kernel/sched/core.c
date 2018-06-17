@@ -2223,33 +2223,6 @@ unsigned long nr_iowait(void)
 	return sum;
 }
 
-unsigned long avg_nr_running(void)
-{
-	unsigned long i, sum = 0;
-	unsigned int seqcnt, ave_nr_running;
-
-	for_each_online_cpu(i) {
-		struct rq *q = cpu_rq(i);
-
-		/*
-		 * Update average to avoid reading stalled value if there were
-		 * no run-queue changes for a long time. On the other hand if
-		 * the changes are happening right now, just read current value
-		 * directly.
-		 */
-		seqcnt = read_seqcount_begin(&q->ave_seqcnt);
-		ave_nr_running = do_avg_nr_running(q);
-		if (read_seqcount_retry(&q->ave_seqcnt, seqcnt)) {
-			read_seqcount_begin(&q->ave_seqcnt);
-			ave_nr_running = q->ave_nr_running;
-		}
-
-		sum += ave_nr_running;
-	}
-
-	return sum;
-}
-
 unsigned long nr_iowait_cpu(int cpu)
 {
 	struct rq *this = cpu_rq(cpu);
@@ -2257,10 +2230,11 @@ unsigned long nr_iowait_cpu(int cpu)
 }
 
 unsigned long this_cpu_load(void)
- {
- 	struct rq *this = this_rq();
- 	return this->cpu_load[0];
- }
+{
+	struct rq *this = this_rq();
+	return this->cpu_load[0];
+}
+
 
 /*
  * Global load-average calculations
@@ -6359,7 +6333,7 @@ static const struct cpumask *cpu_cpu_mask(int cpu)
 	return cpumask_of_node(cpu_to_node(cpu));
 }
 
-int sched_smt_power_savings = 0, sched_mc_power_savings = 2;
+int sched_smt_power_savings = 0, sched_mc_power_savings = 0;
 
 struct sd_data {
 	struct sched_domain **__percpu sd;
@@ -6501,6 +6475,7 @@ build_sched_groups(struct sched_domain *sd, int cpu)
 
 		if (cpumask_test_cpu(i, covered))
 			continue;
+
 
 		group = get_group(i, sdd, &sg);
 		cpumask_clear(sched_group_cpus(sg));
@@ -7458,7 +7433,7 @@ void __init sched_init(void)
 	/* May be allocated at isolcpus cmdline parse time */
 	if (cpu_isolated_map == NULL)
 		zalloc_cpumask_var(&cpu_isolated_map, GFP_NOWAIT);
-        idle_thread_set_boot_cpu();
+	idle_thread_set_boot_cpu();
 #endif
 	init_sched_fair_class();
 

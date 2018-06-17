@@ -158,6 +158,7 @@ static void __raw_remote_swp_spin_lock(raw_remote_spinlock_t *lock)
 
 	__asm__ __volatile__(
 "1:     swp     %0, %2, [%1]\n"
+"       teq     %0, #0\n"
 "       bne     1b"
 	: "=&r" (tmp)
 	: "r" (&lock->lock), "r" (1)

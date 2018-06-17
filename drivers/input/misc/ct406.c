@@ -37,10 +37,6 @@
 #include <linux/uaccess.h>
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#include <linux/input/sweep2wake.h>
-#include <linux/input/doubletap2wake.h>
-#endif
 
 #define CT406_I2C_RETRIES	2
 #define CT406_I2C_RETRY_DELAY	10
@@ -189,14 +185,6 @@ struct ct406_data {
 };
 
 static struct ct406_data *ct406_misc_data;
-
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-bool prox_covered = false;
-static bool forced;
-static bool screen_suspended;
-extern void touch_suspend(void);
-extern void touch_resume(void);
-#endif
 
 static struct ct406_reg {
 	const char *name;
@@ -560,14 +548,7 @@ static void ct406_prox_mode_uncovered(struct ct406_data *ct)
 		pilt = 0;
 	if (piht > ct->pdata_max)
 		piht = ct->pdata_max;
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-if (s2w_switch == 1 || dt2w_switch > 0) {
-	prox_covered = false;
-	if (screen_suspended) {
-		touch_resume();
-		}
-	}	
-#endif
+
 	ct->prox_mode = CT406_PROX_MODE_UNCOVERED;
 	ct->prox_low_threshold = pilt;
 	ct->prox_high_threshold = piht;
@@ -583,18 +564,11 @@ static void ct406_prox_mode_covered(struct ct406_data *ct)
 
 	if (pilt > ct->pdata_max)
 		pilt = ct->pdata_max;
+
 	ct->prox_mode = CT406_PROX_MODE_COVERED;
 	ct->prox_low_threshold = pilt;
 	ct->prox_high_threshold = piht;
 	ct406_write_prox_thresholds(ct);
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-	if (s2w_switch == 1 || dt2w_switch > 0) {
-		prox_covered = true;
-		if (screen_suspended) {
-		touch_suspend();
-		}
-	}
-#endif
 	pr_info("%s: Prox mode covered\n", __func__);
 }
 
@@ -1473,31 +1447,6 @@ static void ct406_work_prox_start(struct work_struct *work)
 	mutex_unlock(&ct->mutex);
 }
 
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-void ct_enable(void)
-{
-	screen_suspended = true;
-	if (!ct406_misc_data->prox_enabled)
-		{
-			forced = true;
-			ct406_enable_prox(ct406_misc_data);
-		}
-}
-EXPORT_SYMBOL(ct_enable);
-
-void ct_disable(void)
-{
-	screen_suspended = false;
-	if (forced)
-		{
-			ct406_disable_prox(ct406_misc_data);
-			forced = false;
-		}
-}
-EXPORT_SYMBOL(ct_disable);
-
-#else
-
 static int ct406_suspend(struct ct406_data *ct)
 {
 	if (ct406_debug & CT406_DBG_SUSPEND_RESUME)
@@ -1552,7 +1501,6 @@ static int ct406_pm_event(struct notifier_block *this,
 
 	return NOTIFY_DONE;
 }
-#endif
 
 #ifdef CONFIG_OF
 static struct ct406_platform_data *
@@ -1744,16 +1692,13 @@ static int ct406_probe(struct i2c_client *client,
 		pr_err("%s:device init failed: %d\n", __func__, error);
 		goto error_revision_read_failed;
 	}
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-	if (s2w_switch == 1 || dt2w_switch > 0)
-		ct406_enable_prox(ct);
-#else
+
 	ct->pm_notifier.notifier_call = ct406_pm_event;
 	error = register_pm_notifier(&ct->pm_notifier);
 	if (error < 0) {
 		pr_err("%s:Register_pm_notifier failed: %d\n", __func__, error);
 	}
-#endif
+
 	return 0;
 
 error_revision_read_failed:
@@ -1854,4 +1799,3 @@ module_exit(ct406_exit);
 MODULE_DESCRIPTION("ALS and Proximity driver for CT406");
 MODULE_AUTHOR("Motorola Mobility");
 MODULE_LICENSE("GPL");
-

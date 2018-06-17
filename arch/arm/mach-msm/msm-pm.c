@@ -817,7 +817,7 @@ int msm_cpu_pm_enter_sleep(enum msm_pm_sleep_mode mode, bool from_idle)
 
 int msm_pm_wait_cpu_shutdown(unsigned int cpu)
 {
-	int timeout = 0;
+	int timeout = 10;
 
 	if (!msm_pm_slp_sts)
 		return 0;
@@ -991,7 +991,7 @@ static int msm_cpu_status_probe(struct platform_device *pdev)
 	return 0;
 };
 
-static struct of_device_id msm_slp_sts_match_tbl[] = {
+static struct of_device_id msm_slp_sts_match_tbl[] __initdata= {
 	{.compatible = "qcom,cpu-sleep-status"},
 	{},
 };
@@ -1005,7 +1005,7 @@ static struct platform_driver msm_cpu_status_driver = {
 	},
 };
 
-static struct of_device_id msm_snoc_clnt_match_tbl[] = {
+static struct of_device_id msm_snoc_clnt_match_tbl[] __initdata = {
 	{.compatible = "qcom,pm-snoc-client"},
 	{},
 };
@@ -1272,7 +1272,7 @@ static int msm_cpu_pm_probe(struct platform_device *pdev)
 	return ret;
 }
 
-static struct of_device_id msm_cpu_pm_table[] = {
+static struct of_device_id msm_cpu_pm_table[] __initdata = {
 	{.compatible = "qcom,pm-8x60"},
 	{},
 };
