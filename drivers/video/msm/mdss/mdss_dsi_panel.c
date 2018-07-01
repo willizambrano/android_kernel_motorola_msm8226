@@ -36,10 +36,6 @@
 #include "mdss_fb.h"
 #include "dsi_v2.h"
 
-#ifdef CONFIG_POWERSUSPEND
-#include <linux/powersuspend.h>
-#endif
-
 #define DT_CMD_HDR 6
 #define DROPBOX_DISPLAY_ISSUE "display_issue"
 #define ESD_DROPBOX_MSG "ESD event detected"
@@ -788,16 +784,12 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_POWERSUSPEND
-	set_power_suspend_state_hook(POWER_SUSPEND_INACTIVE);
-	screen_on = true;
-#endif
-
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 	mipi  = &pdata->panel_info.mipi;
 
 	mfd = pdata->mfd;
+
 	pr_info("%s+: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	if (!mfd->quickdraw_in_progress)
@@ -874,6 +866,7 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		pdata->panel_info.cabc_mode = CABC_UI_MODE;
 
 end:
+
 	if (dropbox_issue != NULL) {
 		char dropbox_entry[256];
 
@@ -907,14 +900,10 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 				panel_data);
 
 	mfd = pdata->mfd;
+
 	pr_info("%s+: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	mipi  = &pdata->panel_info.mipi;
-
-#ifdef CONFIG_POWERSUSPEND
-	set_power_suspend_state_hook(POWER_SUSPEND_ACTIVE);
-	screen_on = false;
-#endif
 
 	if (!mfd->quickdraw_in_progress)
 		mmi_panel_notify(MMI_PANEL_EVENT_PRE_DISPLAY_OFF, NULL);
@@ -948,10 +937,6 @@ disable_regs:
 
 	if (pdata->panel_info.dynamic_cabc_enabled)
 		pdata->panel_info.cabc_mode = CABC_OFF_MODE;
-
-#ifdef CONFIG_POWERSUSPEND
-	set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
-#endif
 
 	pr_info("%s-:\n", __func__);
 
