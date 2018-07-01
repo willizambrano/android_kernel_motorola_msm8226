@@ -19,8 +19,6 @@
 #include <linux/ratelimit.h>
 #include <linux/debugfs.h>
 #include <linux/list.h>
-#include <linux/display_helper.h>
-#include <linux/qpnp/power-on.h>
 #include <linux/mfd/wcd9xxx/core.h>
 #include <linux/mfd/wcd9xxx/core-resource.h>
 #include <linux/mfd/wcd9xxx/wcd9xxx_registers.h>
@@ -2147,12 +2145,6 @@ static void wcd9xxx_mbhc_decide_swch_plug(struct wcd9xxx_mbhc *mbhc)
 		pr_debug("%s: Valid plug found, determine plug type %d\n",
 			 __func__, plug_type);
 		wcd9xxx_find_plug_and_report(mbhc, plug_type);
-	}
-
-	if (panel_status() == DISPLAY_OFF) {
-		power_key(1);
-		msleep(5);
-		power_key(0);
 	}
 
 	pr_debug("%s: leave\n", __func__);

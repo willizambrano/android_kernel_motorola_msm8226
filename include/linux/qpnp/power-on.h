@@ -58,7 +58,6 @@ int qpnp_pon_is_warm_reset(void);
 int qpnp_pon_trigger_config(enum pon_trigger_source pon_src, bool enable);
 int qpnp_pon_wd_config(bool enable);
 int qpnp_pon_store_extra_reset_info(u16 mask, u16 val);
-void power_key(int keypress);
 #else
 static inline int qpnp_pon_system_pwr_off(enum pon_power_off_type type)
 {
