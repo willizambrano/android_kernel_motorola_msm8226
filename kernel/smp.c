@@ -16,6 +16,8 @@
 
 #include "smpboot.h"
 
+#include "smpboot.h"
+
 #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
 static struct {
 	struct list_head	queue;
