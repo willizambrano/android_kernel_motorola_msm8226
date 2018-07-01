@@ -37,8 +37,8 @@
 #include "dsi_v2.h"
 
 #ifdef CONFIG_POWERSUSPEND
-+#include <linux/powersuspend.h>
-+#endif
+#include <linux/powersuspend.h>
+#endif
 
 #define DT_CMD_HDR 6
 #define DROPBOX_DISPLAY_ISSUE "display_issue"
