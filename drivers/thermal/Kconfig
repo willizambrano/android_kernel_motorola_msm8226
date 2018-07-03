@@ -73,10 +73,6 @@ config THERMAL_PM8XXX
 	  shifting over temperature shutdown control of the PMIC from hardware
 	  to software.
 
-choice
-	prompt "MSM Thermal Monitor Types"
-	default THERMAL_MONITOR
-
 config INTELLI_THERMAL
 	bool "Better thermal monitor for MSM"
 	depends on THERMAL_TSENS8960
