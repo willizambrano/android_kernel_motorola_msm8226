@@ -47,6 +47,7 @@ enum cpr_fuse_corner_enum {
  * %CPR_CORNER_10:		Tenth lowest voltage for APC
  * %CPR_CORNER_11:		Eleventh lowest voltage for APC
  * %CPR_CORNER_12:		Twelfth lowest voltage for APC
+ * %CPR_CORNER_13:		Thirteenth lowest voltage for APC
  *
  * These should be used in regulator_set_voltage() for CPR
  * regulator as if they had units of uV.
@@ -64,6 +65,7 @@ enum cpr_corner_enum {
 	CPR_CORNER_10,
 	CPR_CORNER_11,
 	CPR_CORNER_12,
+	CPR_CORNER_13,
 };
 
 /**
