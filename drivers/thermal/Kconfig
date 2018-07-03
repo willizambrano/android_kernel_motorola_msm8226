@@ -87,7 +87,7 @@ config INTELLI_THERMAL_V2
 	depends on CPU_FREQ_MSM
 	help
 	  This enables thermal monitoring capability in the kernel replacing
-userspace thermal monitoring altogether.
+	   userspace thermal monitoring altogether.
 
 config THERMAL_MONITOR
 	bool "Monitor thermal state and limit CPU Frequency"
