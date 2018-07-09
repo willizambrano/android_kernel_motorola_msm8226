@@ -2,7 +2,7 @@
 #        Evolution Features          #
 ######################################
 
-CONFIG_LOCALVERSION="-EVOLUTION_TURBO-Dolby"
+CONFIG_LOCALVERSION="-EVOLUTION_TURBO-X"
 # CONFIG_LOCALVERSION_AUTO is not set
 
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
