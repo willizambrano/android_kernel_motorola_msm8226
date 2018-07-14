@@ -244,9 +244,10 @@ static void get_speed_bin(struct platform_device *pdev, int *bin, int *version)
 	if (redundant_sel == 1)
 		*bin = (pte_efuse >> 27) & 0x7;
 
-	dev_info(&pdev->dev, "Speed bin being set to 1\n");
-	*bin = 1; // Force BIN 1
-
+	// Force speed bin 1
+	dev_info(&pdev->dev, "Speed bin set to 1.\n");
+	*bin = 1;
+ 
 	dev_info(&pdev->dev, "Speed bin: %d\n", *bin);
 	dev_info(&pdev->dev, "PVS version: %d\n", *version);
 
