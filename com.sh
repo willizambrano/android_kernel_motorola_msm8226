@@ -16,7 +16,7 @@ echo -e "*****************************************************$nocol"
 rm -rf arch/arm/boot/*.dtb
 make clean && make mrproper
 
-export CROSS_COMPILE=/home/joker/q6.4/bin/arm-eabi-
+export CROSS_COMPILE=/home/joker/q6.4/bin/arm-QUVNTNM_TOOLCHAIN-linux-musleabihf-
 export ARCH=arm
 
 make falcon_defconfig
