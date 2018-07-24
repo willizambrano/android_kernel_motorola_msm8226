@@ -18,8 +18,12 @@ make clean && make mrproper
 
 export CROSS_COMPILE=/home/joker/q6.4/bin/arm-eabi-
 export ARCH=arm
+export SUBARCH=arm
+export KBUILD_BUILD_USER="WilliamZambrano"
+export KBUILD_BUILD_HOST="LinuxLite"
 
-make falcon_defconfig
+make efalcon_defconfig
+make menuconfig
 echo -e "$blue*****************************************************"
 echo "           Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
