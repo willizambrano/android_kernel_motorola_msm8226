@@ -1801,7 +1801,7 @@ static int path_lookupat(int dfd, const char *name,
 	err = path_init(dfd, name, flags | LOOKUP_PARENT, nd, &base);
 
 	if (unlikely(err))
-		goto out;
+		return err;
 
 	current->total_link_count = 0;
 	err = link_path_walk(name, nd);
@@ -1839,7 +1839,6 @@ static int path_lookupat(int dfd, const char *name,
 		}
 	}
 
-out:
 	if (base)
 		fput(base);
 
@@ -3360,7 +3359,7 @@ int vfs_rename2(struct vfsmount *mnt,
 {
 	int error;
 	int is_dir = S_ISDIR(old_dentry->d_inode->i_mode);
-	const unsigned char *old_name;
+	struct name_snapshot old_name;
 
 	if (old_dentry->d_inode == new_dentry->d_inode)
  		return 0;
@@ -3379,16 +3378,16 @@ int vfs_rename2(struct vfsmount *mnt,
 	if (!old_dir->i_op->rename)
 		return -EPERM;
 
-	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
+	take_dentry_name_snapshot(&old_name, old_dentry);
 
 	if (is_dir)
 		error = vfs_rename_dir(mnt, old_dir,old_dentry,new_dir,new_dentry);
 	else
 		error = vfs_rename_other(old_dir,old_dentry,new_dir,new_dentry);
 	if (!error)
-		fsnotify_move(old_dir, new_dir, old_name, is_dir,
+		fsnotify_move(old_dir, new_dir, old_name.name, is_dir,
 			      new_dentry->d_inode, old_dentry);
-	fsnotify_oldname_free(old_name);
+	take_dentry_name_snapshot(&old_name, old_dentry);
 
 	return error;
 }

@@ -229,4 +229,3 @@ static int __init earlysuspendsync_setup(char *str)
 }
 
 __setup("earlysuspendsync=", earlysuspendsync_setup);
-

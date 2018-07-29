@@ -21,7 +21,6 @@
 #include <linux/leds.h>
 #include <linux/qpnp/pwm.h>
 #include <linux/err.h>
-#include <linux/display_state.h>
 #include <linux/dropbox.h>
 #include <linux/uaccess.h>
 #include <linux/msm_mdp.h>
@@ -30,6 +29,7 @@
 
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
+#include <linux/lcd_notify.h>
 #include <mach/mmi_panel_notifier.h>
 
 #include "mdss_dsi.h"
@@ -70,12 +70,6 @@
 
 DEFINE_LED_TRIGGER(bl_led_trigger);
 
-bool display_on = true;
-
-bool is_display_on()
-{
-	return display_on;
-}
 
 static DECLARE_COMPLETION(bl_on_delay_completion);
 static enum hrtimer_restart mdss_dsi_panel_bl_on_defer_timer_expire(
@@ -810,13 +804,13 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		return -EINVAL;
 	}
 
-	display_on = true;
-
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 	mipi  = &pdata->panel_info.mipi;
 
 	mfd = pdata->mfd;
+
+	lcd_notifier_call_chain(LCD_EVENT_ON_START);
 
 	pr_info("%s+: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
@@ -908,6 +902,8 @@ end:
 	} else
 		dropbox_count = 0;
 
+	lcd_notifier_call_chain(LCD_EVENT_ON_END);
+
 	pr_info("%s-. Pwr_mode(0x0A) = 0x%x\n", __func__, pwr_mode);
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
@@ -945,6 +941,7 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 
 	mfd = pdata->mfd;
 
+	lcd_notifier_call_chain(LCD_EVENT_OFF_START);
 
 	pr_info("%s+: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
@@ -983,9 +980,9 @@ disable_regs:
 	if (pdata->panel_info.dynamic_cabc_enabled)
 		pdata->panel_info.cabc_mode = CABC_OFF_MODE;
 
-	pr_info("%s-:\n", __func__);
+	lcd_notifier_call_chain(LCD_EVENT_OFF_END);
 
-	display_on = false;
+	pr_info("%s-:\n", __func__);
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 	if (s2w_switch == 1) {

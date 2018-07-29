@@ -28,13 +28,6 @@
 #include "audio_acdb.h"
 #include "q6voice.h"
 
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-#include <linux/input/sweep2wake.h>
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-#include <linux/input/doubletap2wake.h>
-#endif
-
 
 #define TIMEOUT_MS 300
 
@@ -101,13 +94,6 @@ static int voice_free_oob_shared_mem(void);
 static int voice_alloc_oob_mem_table(void);
 static int voice_alloc_and_map_cal_mem(struct voice_data *v);
 static int voice_alloc_and_map_oob_mem(struct voice_data *v);
-
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-extern bool s2w_call_activity;
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-extern bool dt2w_call_activity;
-#endif
 
 static struct voice_data *voice_get_session_by_idx(int idx);
 
@@ -3903,8 +3889,15 @@ static int voice_cvs_start_record(struct voice_data *v, uint32_t rec_mode)
 		cvs_start_record.hdr.token = 0;
 		cvs_start_record.hdr.opcode = VSS_IRECORD_CMD_START;
 
+		// In order to enable stereo recording,
+		// i.e. TX on the left and RX on the right
+		// the respective ports need to be explicitly specified:
+		// INCALL_RECORD_TX => 0x8003
+		// INCALL_RECORD_RX => 0x8004
+		/*cvs_start_record.rec_mode.port_id =
+					VSS_IRECORD_PORT_ID_DEFAULT; */
 		cvs_start_record.rec_mode.port_id =
-					VSS_IRECORD_PORT_ID_DEFAULT;
+					VSS_IRECORD_PORT_ID_TX_RX;
 		if (rec_mode == VOC_REC_UPLINK) {
 			cvs_start_record.rec_mode.rx_tap_point =
 					VSS_IRECORD_TAP_POINT_NONE;
@@ -3927,6 +3920,9 @@ static int voice_cvs_start_record(struct voice_data *v, uint32_t rec_mode)
 			ret = -EINVAL;
 			goto fail;
 		}
+
+		// request stereo recording
+		cvs_start_record.rec_mode.mode = VSS_IRECORD_MODE_TX_RX_STEREO;
 
 		v->cvs_state = CMD_STATUS_FAIL;
 
@@ -4801,16 +4797,6 @@ int voc_end_voice_call(uint32_t session_id)
 		voice_destroy_mvm_cvs_session(v);
 
 		v->voc_state = VOC_RELEASE;
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if (s2w_switch > 0) {
-		s2w_call_activity = false;
-	}
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if (dt2w_switch > 0) {
-		dt2w_call_activity = false;
-	}
-#endif
 	} else {
 		pr_err("%s: Error: End voice called in state %d\n",
 			__func__, v->voc_state);
@@ -4868,16 +4854,6 @@ int voc_standby_voice_call(uint32_t session_id)
 		}
 		v->voc_state = VOC_STANDBY;
 	}
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if (s2w_switch > 0) {
-		s2w_call_activity = true;
-	}
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if (dt2w_switch > 0) {
-		dt2w_call_activity = true;
-	}
-#endif
 fail:
 	return ret;
 }
@@ -4937,16 +4913,6 @@ int voc_resume_voice_call(uint32_t session_id)
 	}
 	v->voc_state = VOC_RUN;
 	return 0;
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if (s2w_switch > 0) {
-		s2w_call_activity = true;
-	}
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if (dt2w_switch > 0) {
-		dt2w_call_activity = true;
-	}
-#endif
 fail:
 	return -EINVAL;
 }
@@ -5051,16 +5017,6 @@ int voc_start_voice_call(uint32_t session_id)
 		ret = -EINVAL;
 		goto fail;
 	}
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if (s2w_switch > 0) {
-		s2w_call_activity = true;
-	}
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if (dt2w_switch > 0) {
-		dt2w_call_activity = true;
-	}
-#endif
 fail:
 	mutex_unlock(&v->lock);
 	return ret;

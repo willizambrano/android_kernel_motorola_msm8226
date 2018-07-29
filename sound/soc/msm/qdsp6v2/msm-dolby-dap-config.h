@@ -352,4 +352,3 @@ void dolby_dap_deinit(int port_id) { return; }
 #endif
 
 #endif
-

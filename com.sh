@@ -16,19 +16,17 @@ echo -e "*****************************************************$nocol"
 rm -rf arch/arm/boot/*.dtb
 make clean && make mrproper
 
-export CROSS_COMPILE=/home/william/gcc4.8/bin/arm-eabi-
+export CROSS_COMPILE=/home/joker/q6.4/bin/arm-eabi-
 export ARCH=arm
-export SUBARCH=arm
 export KBUILD_BUILD_USER="WilliamZambrano"
-export KBUILD_BUILD_HOST="Fx6300"
+export KBUILD_BUILD_HOST="LinuxLite"
 
 make falcon_defconfig
-make menuconfig
 echo -e "$blue*****************************************************"
 echo "           Compilando Evolution_Kernel         "
 echo -e "*****************************************************$nocol"
 
-make -o3 -j6 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
+make -o3 -j2 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
