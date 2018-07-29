@@ -20,11 +20,9 @@
 #include <linux/init.h>
 #include <linux/uaccess.h>
 #include <linux/user.h>
-#include <linux/export.h>
 #include <linux/proc_fs.h>
 #include <linux/export.h>
 #include <linux/seq_file.h>
-#include <linux/export.h>
 
 #include <asm/cp15.h>
 #include <asm/cputype.h>
@@ -840,4 +838,4 @@ static int __init vfp_init(void)
 	return 0;
 }
 
-core_initcall(vfp_init);
+late_initcall(vfp_init);

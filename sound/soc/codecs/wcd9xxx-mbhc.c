@@ -2146,7 +2146,6 @@ static void wcd9xxx_mbhc_decide_swch_plug(struct wcd9xxx_mbhc *mbhc)
 			 __func__, plug_type);
 		wcd9xxx_find_plug_and_report(mbhc, plug_type);
 	}
-
 	pr_debug("%s: leave\n", __func__);
 }
 

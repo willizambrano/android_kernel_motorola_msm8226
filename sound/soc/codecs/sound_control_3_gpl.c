@@ -23,9 +23,7 @@
 #include <linux/mfd/wcd9xxx/wcd9306_registers.h>
 
 #define SOUND_CONTROL_MAJOR_VERSION	3
-#define SOUND_CONTROL_MINOR_VERSION	5
-
-#define REG_SZ	21
+#define SOUND_CONTROL_MINOR_VERSION	6
 
 extern struct snd_soc_codec *fauxsound_codec_ptr;
 extern int wcd9xxx_hw_revision;
@@ -37,10 +35,9 @@ unsigned int tapan_read(struct snd_soc_codec *codec, unsigned int reg);
 int tapan_write(struct snd_soc_codec *codec, unsigned int reg,
 		unsigned int value);
 
-
+#define REG_SZ	17
 static unsigned int cached_regs[] = {6, 6, 0, 0, 0, 0, 0, 0, 0, 0,
-			    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			    0 };
+			    0, 0, 0, 0, 0, 0, 0};
 
 static unsigned int *cache_select(unsigned int reg)
 {
@@ -76,6 +73,12 @@ static unsigned int *cache_select(unsigned int reg)
 			break;
                 case TAPAN_A_CDC_TX4_VOL_CTL_GAIN:
 			out = &cached_regs[14];
+			break;
+		case TAPAN_A_RX_LINE_1_GAIN:
+			out = &cached_regs[15];
+			break;
+		case TAPAN_A_RX_LINE_2_GAIN:
+			out = &cached_regs[16];
 			break;
         }
 	return out;
@@ -115,6 +118,8 @@ int snd_hax_reg_access(unsigned int reg)
 		case TAPAN_A_CDC_RX2_VOL_CTL_B2_CTL:
 		case TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL:
 		case TAPAN_A_CDC_RX4_VOL_CTL_B2_CTL:
+		case TAPAN_A_RX_LINE_1_GAIN:
+		case TAPAN_A_RX_LINE_2_GAIN:
 			if (snd_ctrl_locked > 0)
 				ret = 0;
 			break;
@@ -196,9 +201,9 @@ static ssize_t speaker_gain_show(struct kobject *kobj,
 {
         return sprintf(buf, "%u %u\n",
 			tapan_read(fauxsound_codec_ptr,
-				TAPAN_A_CDC_RX2_VOL_CTL_B2_CTL),
+				TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL),
 			tapan_read(fauxsound_codec_ptr,
-				TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL));
+				TAPAN_A_CDC_RX4_VOL_CTL_B2_CTL));
 
 }
 
@@ -211,9 +216,9 @@ static ssize_t speaker_gain_store(struct kobject *kobj,
 
 	if (calc_checksum(lval, rval, chksum)) {
 		tapan_write(fauxsound_codec_ptr,
-			TAPAN_A_CDC_RX2_VOL_CTL_B2_CTL, lval);
+			TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL, lval);
 		tapan_write(fauxsound_codec_ptr,
-			TAPAN_A_CDC_RX3_VOL_CTL_B2_CTL, rval);
+			TAPAN_A_CDC_RX4_VOL_CTL_B2_CTL, rval);
 	}
 	return count;
 }
@@ -340,7 +345,8 @@ static ssize_t sound_control_locked_store(struct kobject *kobj,
 	return count;
 }
 
-static ssize_t sound_control_locked_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sound_control_locked_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
 {
         return sprintf(buf, "%d\n", snd_ctrl_locked);
 }
@@ -416,12 +422,12 @@ static struct kobj_attribute sound_control_locked_attribute =
 		0666,
 		sound_control_locked_show,
 		sound_control_locked_store);
-		
+
 static struct kobj_attribute sound_control_rec_locked_attribute =
 	__ATTR(gpl_sound_control_rec_locked,
 		0666,
 		sound_control_rec_locked_show,
-		sound_control_rec_locked_store);		
+		sound_control_rec_locked_store);
 
 static struct kobj_attribute sound_control_version_attribute =
 	__ATTR(gpl_sound_control_version,
@@ -491,3 +497,4 @@ module_exit(sound_control_exit);
 MODULE_LICENSE("GPL and additional rights");
 MODULE_AUTHOR("Paul Reioux <reioux@gmail.com>");
 MODULE_DESCRIPTION("Sound Control Module 3.x");
+
