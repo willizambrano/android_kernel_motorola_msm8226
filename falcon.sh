@@ -27,7 +27,7 @@ export CROSS_COMPILE=$QS_TOOLCHAIN
 export ARCH=arm
 export KBUILD_BUILD_USER="WilliamZambrano"
 export KBUILD_BUILD_HOST="LinuxLite"
-export LOCALVERSION=-Cerberus_Kernel-$QS_VERSION-$QS_DATE
+export LOCALVERSION=-CERBERUS_v$QS_VERSION-$QS_DATE
 
 make falcon_defconfig
 echo -e "$blue*****************************************************"

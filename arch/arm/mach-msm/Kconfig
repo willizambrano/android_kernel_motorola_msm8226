@@ -1890,7 +1890,7 @@ config MSM_CPU_FREQ_SET_MIN_MAX
 config MSM_CPU_FREQ_MAX
 	int "Max CPU Frequency"
 	depends on MSM_CPU_FREQ_SET_MIN_MAX
-	default 1593600
+	default 1190400
 
 config MSM_CPU_FREQ_MIN
 	int "Min CPU Frequency"
@@ -3078,6 +3078,14 @@ config WALL_CLK_SYSFS
 	 Support the wallclk directory in sysfs filesystem to enable the
 	 wall clock simulation and read the current SFN.
 
+config BRICKED_HOTPLUG
+	bool "Enable kernel based mpdecision"
+	depends on MSM_RUN_QUEUE_STATS
+	default y
+	help
+	  This enables kernel based multi core control.
+	  (up/down hotplug based on load)
+
 config KRAIT_REGULATOR
 	bool "Support Kraits powered via ganged regulators in the pmic"
 	help
@@ -3094,12 +3102,13 @@ config MSM_HOTPLUG
 	  The MSM hotplug driver controls on-/offlining of additional cores based
 	  on current cpu load.
 
-config FORCE_FAST_CHARGE
-	bool "Force AC charge mode at will"
+config ASMP
+	bool "Multi-core automatic hotplug support"
+	depends on SMP
 	default y
 	help
-		A simple sysfs interface to force adapters that
-		are detected as USB to charge as AC.
+	  Automatically hotplugs the multiple cpu cores on and off
+	  based on cpu load and suspend state
 
 config HAS_MACH_MEMUTILS
 	default n
@@ -3184,5 +3193,12 @@ config PM_DEBUG_WAKEUP
 	depends on PM_DEBUG
     default n
     bool "Report wakeup source in a uevent"
+
+config FORCE_FAST_CHARGE
+	bool "Force AC charge mode at will"
+	default y
+	help
+	  A simple sysfs interface to force adapters that
+	  are detected as USB to charge as AC.
 
 endif
