@@ -1,5 +1,5 @@
 #!/bin/bash
-# Compiler Powered_by_AMDfx6300
+# Simple Kernel script compiler
 #
 
 BUILD_START=$(date +"%s")
@@ -9,22 +9,29 @@ yellow='\033[0;33m'
 red='\033[0;31m'
 nocol='\033[0m'
 
+# Init Fields
+QS_V_MAJOR=1
+QS_V_MINOR=0
+QS_VERSION=v$QS_V_MAJOR.$QS_V_MINOR
+QS_DATE=$(date +%Y%m%d)
+QS_TOOLCHAIN=/home/joker/q6.4/bin/arm-eabi-
+
 echo -e "$yellow*****************************************************"
-echo "                 Borrando basura         "
+echo "                Cleaning source         "
 echo -e "*****************************************************$nocol"
 
 rm -rf arch/arm/boot/*.dtb
 make clean && make mrproper
 
-export CROSS_COMPILE=/home/joker/q6.4/bin/arm-eabi-
+export CROSS_COMPILE=$QS_TOOLCHAIN
 export ARCH=arm
-export SUBARCH=arm
 export KBUILD_BUILD_USER="WilliamZambrano"
 export KBUILD_BUILD_HOST="LinuxLite"
+export LOCALVERSION=-Cerberus_Kernel-$QS_VERSION-$QS_DATE
 
-make falcon_defconfig
+make peregrine_defconfig
 echo -e "$blue*****************************************************"
-echo "           Compilando Evolution_Kernel         "
+echo "           Building Metis_Kernel         "
 echo -e "*****************************************************$nocol"
 
 make -o3 -j2 CONFIG_DEBUG_SECTION_MISMATCH=y CONFIG_NO_ERROR_ON_MISMATCH=y
